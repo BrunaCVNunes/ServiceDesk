@@ -1,235 +1,100 @@
 package br.usjt.arqsw.dao;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.List;
 
-import com.mysql.jdbc.Connection;
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 import br.usjt.aqrsw.factory.ConnectionFactory;
 import br.usjt.arqsw.entity.Chamado;
 import br.usjt.arqsw.entity.Fila;
 import br.usjt.arqsw.service.FilaService;
-
 /**
  * 
  * @author BrunaCamariniVieiraNunes-8162257981
  *
  */
+@Repository
 public class ChamadoDAO {
 	
-	public Chamado inserirChamado(Chamado chamado) throws IOException {
-		String sqlInserir = "INSERT INTO CHAMADO VALUES (DEFAULT, ?, ?, ?, ?, ?)";
-		try(Connection conn = ConnectionFactory.conectar();
-				PreparedStatement stm = conn.prepareStatement(sqlInserir);){
-			stm.setString(1, chamado.getDescricao());
-			stm.setString(2,chamado.getStatus());
-			String stringData = null;
-			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-			stringData = df.format(chamado.getDataAbertura());
-			stm.setDate(3, java.sql.Date.valueOf(stringData));
-			if (chamado.getDataFechamento() != null){
-				stringData = df.format(chamado.getDataFechamento());
-				stm.setDate(4, java.sql.Date.valueOf(stringData));
-			}else {
-				stm.setDate(4, null);
+private Connection conn;
+	
+	@Autowired
+	public ChamadoDAO(DataSource dataSource) throws IOException{
+		try{
+			this.conn = dataSource.getConnection();
+		}catch(SQLException e){
+			throw new IOException(e);
+		}
+	}
+
+	public int criarChamado(Chamado chamado) throws IOException {
+		int id = -1;
+		String sql = "INSERT INTO chamado (descricao, status, dt_abertura, id_fila) VALUES (?,?,?,?)";
+		String sql1 = "SELECT LAST_INSERT_ID()";
+		try(PreparedStatement stmt = conn.prepareStatement(sql);){
+			stmt.setString(1, chamado.getDescricao());
+			stmt.setString(2, chamado.getStatus());
+			stmt.setDate(3, new Date(chamado.getDataAbertura().getTime()));
+			stmt.setInt(4, chamado.getFila().getId());
+			stmt.execute();
+			
+			try(PreparedStatement stm = conn.prepareStatement(sql1);
+					ResultSet rs = stm.executeQuery();){
+				rs.next();
+				id = rs.getInt(1);
+			}catch(SQLException e1){
+				throw new IOException(e1);
 			}
-			stm.setInt(5,chamado.getFila().getId());
-			stm.execute();
-		String sqlQuery = "SELECT LAST_INSERT_ID()";
-		try (PreparedStatement stm2 = conn.prepareStatement(sqlQuery); ResultSet rs = stm2.executeQuery();) {
-			if (rs.next()) {
-				chamado.setNumero(rs.getInt(1));
+			
+		}catch(SQLException e){
+			throw new IOException(e);
+		}
+		
+		return id;
+	}
+
+	public ArrayList<Chamado> listarChamados(Fila fila) throws IOException {
+		ArrayList<Chamado> listaChamados = new ArrayList<Chamado>();
+
+		String sql = "SELECT c.ID_CHAMADO, c.DESCRICAO, c.STATUS, c.DT_ABERTURA, c.DT_FECHAMENTO, f.NM_FILA"
+				+ " FROM chamado c INNER JOIN fila f ON c.ID_FILA = f.ID_FILA WHERE c.ID_FILA = ?";
+
+		try (PreparedStatement stm = conn.prepareStatement(sql);) {
+			stm.setInt(1, fila.getId());
+			try (ResultSet rs = stm.executeQuery();) {
+
+				while (rs.next()) {
+					Chamado chamado = new Chamado();
+					chamado.setNumero(rs.getInt("ID_CHAMADO"));
+					chamado.setDescricao(rs.getString("DESCRICAO"));
+					chamado.setStatus(rs.getString("STATUS"));
+					chamado.setDataAbertura(rs.getDate("DT_ABERTURA"));
+					chamado.setDataFechamento(rs.getDate("DT_FECHAMENTO"));
+					// Captura o nome da fila
+					fila.setNome(rs.getString("NM_FILA"));
+					chamado.setFila(fila);
+					listaChamados.add(chamado);
+				}
+
+			} catch (SQLException e1) {
+				throw new IOException(e1);
 			}
+
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw new IOException(e);
 		}
-		}catch(SQLException e){
-			e.printStackTrace();
-		}
-		return chamado;
-	}
-	
-	public Chamado carregarChamado(int id){
-		Chamado chamado = new Chamado();
-		chamado.setNumero(id);
-		String sqlSelect = "SELECT ID_CHAMADO AS 'idChamado',"
-				+ "DESCRICAO AS 'descricao', "
-				+ "STATUS AS 'status', "
-				+ "DT_ABERTURA AS 'dataAbertura', "
-				+ "DT_FECHAMENTO AS 'dataFechamento',"
-				+ "ID_FILA AS 'idFila'"
-				+ "FROM CHAMADO";
-				try (Connection conn = ConnectionFactory.conectar();
-					PreparedStatement stm = conn.prepareStatement(sqlSelect);) {
-						stm.setInt(1, chamado.getNumero());
-						try (ResultSet rs = stm.executeQuery();) {
-							if (rs.next()) {
-								chamado.setDescricao(rs.getString("descricao"));
-								chamado.setStatus(rs.getString("status"));
-								DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
-								String stringData = df.format(rs.getDate("dataAbertura"));
-								chamado.setDataAbertura(java.sql.Date.valueOf(stringData));
-								if (rs.getDate("dataFechamento") != null){
-									stringData = df.format(rs.getDate("dataAbertura"));
-									chamado.setDataFechamento(java.sql.Date.valueOf(stringData));
-								}
-								Fila fila = new Fila();
-								fila.setId(rs.getInt("idFila"));
-								FilaService filaSvc = new FilaService();
-								try {
-									fila = filaSvc.carregar(fila.getId());
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							} else {
-								chamado.setNumero(-1);
-								chamado.setDescricao(null);
-								chamado.setStatus(null);
-								chamado.setDataAbertura(null);
-								chamado.setDataFechamento(null);
-								chamado.setFila(null);
-							}
-					}  catch (SQLException e) {
-						e.printStackTrace();
-					}
-					} catch (SQLException e1) {
-						e1.printStackTrace();
-				}
-				return chamado;
-	}
-	
-	public void alterarChamado(Chamado chamado){
-		String sqlAlterar = "Update CHAMADO set DESCRICAO=?, STATUS=?, DT_ABERTURA=?, DT_FECHAMENTO=?, ID_FILA=? WHERE ID_CHAMADO =?";
-		try(Connection conn = ConnectionFactory.conectar();
-				PreparedStatement stm = conn.prepareStatement(sqlAlterar);){
-			stm.setString(1, chamado.getDescricao());
-			stm.setString(2,chamado.getStatus());
-			String stringData = null;
-			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-			stringData = df.format(chamado.getDataAbertura());
-			stm.setDate(3, java.sql.Date.valueOf(stringData));
-			if (chamado.getDataFechamento() != null){
-				stringData = df.format(chamado.getDataFechamento());
-				stm.setDate(4, java.sql.Date.valueOf(stringData));
-			}else {
-				stm.setDate(4, null);
-			}
-			stm.setInt(5,chamado.getFila().getId());
-			stm.setInt(6, chamado.getNumero());
-			stm.execute();
-		}catch(SQLException e){
-			e.printStackTrace();
-		}
-		
-	}
-	
-	public boolean excluirChamado(Chamado chamado){
-		boolean result;
-		String sqlDeletar = "DELETE FROM CHAMADO WHERE ID_CHAMADO =?";
-		try(Connection conn = ConnectionFactory.conectar();
-				PreparedStatement stm = conn.prepareStatement(sqlDeletar);){
-			stm.setInt(1, chamado.getNumero());
-			stm.execute();
-			result = true;
-		}catch(SQLException e){
-			e.printStackTrace();
-			result = false;
-		}
-		
-		return result;
-	}
-	
-	public ArrayList<Chamado> listarChamados(Fila fila) throws IOException{
-		Chamado chamado;
-		ArrayList<Chamado> chamados = new ArrayList<>();
-		String sqlSelecionarN = "SELECT ID_CHAMADO AS 'idChamado',"
-								+ "DESCRICAO AS 'descricao', "
-								+ "STATUS AS 'status', "
-								+ "DT_ABERTURA AS 'dataAbertura', "
-								+ "DT_FECHAMENTO AS 'dataFechamento'"
-								+ "FROM CHAMADO where (ID_FILA) like ?";
-		try(Connection conn = ConnectionFactory.conectar();
-				PreparedStatement stm = conn.prepareStatement(sqlSelecionarN);){
-				stm.setInt(1, fila.getId() );
-			try(ResultSet rs = stm.executeQuery()){
-				while(rs.next()){
-				chamado = new Chamado();
-				chamado.setNumero(rs.getInt("idChamado"));
-				chamado.setDescricao(rs.getString("descricao"));
-				chamado.setStatus(rs.getString("status"));
-				DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
-				String stringData = df.format(rs.getDate("dataAbertura"));
-				chamado.setDataAbertura(java.sql.Date.valueOf(stringData));
-				if (rs.getDate("dataFechamento") != null){
-					stringData = df.format(rs.getDate("dataAbertura"));
-					chamado.setDataFechamento(java.sql.Date.valueOf(stringData));
-				}	
-				chamados.add(chamado);
-				}
-			}catch(SQLException e){
-				e.printStackTrace();
-			}
-		}catch(SQLException e){
-			e.printStackTrace();
-		}
-		
-		return chamados;
-	}
-	
 
-	public List<Chamado> listarChamados(){
-		Chamado chamado;
-		ArrayList<Chamado> chamados = new ArrayList<>();
-		String sqlSelecionarN = "SELECT ID_CHAMADO AS 'idChamado',"
-								+ "DESCRICAO AS 'descricao', "
-								+ "STATUS AS 'status', "
-								+ "DT_ABERTURA AS 'dataAbertura', "
-								+ "DT_FECHAMENTO AS 'dataFechamento',"
-								+ "ID_FILA AS 'idFila'"
-								+ "FROM CHAMADO";
-		try(Connection conn = ConnectionFactory.conectar();
-				PreparedStatement stm = conn.prepareStatement(sqlSelecionarN);){;
-			try(ResultSet rs = stm.executeQuery()){
-				while(rs.next()){
-				chamado = new Chamado();
-				chamado.setNumero(rs.getInt("idChamado"));
-				chamado.setDescricao(rs.getString("descricao"));
-				chamado.setStatus(rs.getString("status"));
-				DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
-				String stringData = df.format(rs.getDate("dataAbertura"));
-				chamado.setDataAbertura(java.sql.Date.valueOf(stringData));
-				if (rs.getDate("dataFechamento") != null){
-					stringData = df.format(rs.getDate("dataAbertura"));
-					chamado.setDataFechamento(java.sql.Date.valueOf(stringData));
-				}
-				Fila fila = new Fila();
-				fila.setId(rs.getInt("idFila"));
-				FilaService filaSvc = new FilaService();
-				try {
-					fila = filaSvc.carregar(fila.getId());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				chamados.add(chamado);
-				}
-			}catch(SQLException e){
-				e.printStackTrace();
-			}
-		}catch(SQLException e){
-			e.printStackTrace();
-		}
-		
-		return chamados;
+		return listaChamados;
 	}
-
 
 
 }

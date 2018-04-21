@@ -6,6 +6,8 @@ import java.util.List;
 
 import javax.validation.Valid;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -25,15 +27,12 @@ public class ManterChamadosController {
 	private FilaService filaService;
 	private ChamadoService chamadoService;
 
-	public ManterChamadosController() {
-		filaService = new FilaService();
-		chamadoService = new ChamadoService();
-	}
+    @Autowired
+    public ManterChamadosController(FilaService filaService, ChamadoService chamadoService) {
+        this.filaService = filaService;
+        this.chamadoService = chamadoService;
+    }
 
-	/**
-	 * 
-	 * @return
-	 */
 	@RequestMapping("index")
 	public String inicio() {
 		return "index";
@@ -42,12 +41,7 @@ public class ManterChamadosController {
 	private List<Fila> listarFilas() throws IOException{
 			return filaService.listarFilas();
 	}
-	
-	/**
-	 * 
-	 * @param model Acesso à request http
-	 * @return JSP de Listar Chamados
-	 */
+
 	@RequestMapping("/listar_filas_exibir")
 	public String listarFilasExibir(Model model) {
 		try {

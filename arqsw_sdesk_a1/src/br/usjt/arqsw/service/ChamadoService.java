@@ -3,43 +3,36 @@ package br.usjt.arqsw.service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import br.usjt.arqsw.dao.ChamadoDAO;
 import br.usjt.arqsw.entity.Chamado;
 import br.usjt.arqsw.entity.Fila;
-
 /**
  * 
  * @author BrunaCamariniVieiraNunes-8162257981
  *
  */
+@Service
 public class ChamadoService {
-	ChamadoDAO dao;
+	private ChamadoDAO dao;
 	
-	
-	public ChamadoService(){
-		dao = new ChamadoDAO();
+	@Autowired
+	public ChamadoService(ChamadoDAO dao){
+		this.dao = dao;
 	}
 	
-	public Chamado novoChamado(Chamado chamado) throws IOException{
+	public int criarChamado(Chamado chamado) throws IOException{
+		chamado.setStatus(Chamado.ABERTO);
 		chamado.setDataAbertura(new Date());
 		chamado.setDataFechamento(null);
-		chamado.setStatus(Chamado.ABERTO);
-		return dao.inserirChamado(chamado);
-	}
-	
-	public Chamado carregarChamado(int id){
-		return dao.carregarChamado(id);
+		
+		return dao.criarChamado(chamado);
 	}
 	
 	public ArrayList<Chamado> listarChamados(Fila fila) throws IOException{
-		return dao.listarChamados(fila);
+		return dao.listarChamados(fila);	
 	}
-
-	public List<Chamado> listarChamados() throws IOException{
-		// TODO Auto-generated method stub
-			return dao.listarChamados();
-	}
-
 }
