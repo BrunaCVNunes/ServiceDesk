@@ -29,7 +29,7 @@
                     <form:errors path="fila.id" cssStyle="color:red"/><br>
                     <select class="form-control" name="id">
                         <option value="0"></option>
-                        <c:forEach var="fila" items="${filas}">
+                        <c:forEach var="fila" items="${filas }">
                             <option value="${fila.id}">${fila.nome}</option>
                         </c:forEach>
                     </select>

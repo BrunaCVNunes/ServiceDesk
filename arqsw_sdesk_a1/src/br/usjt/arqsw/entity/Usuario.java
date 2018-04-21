@@ -12,7 +12,8 @@ import javax.validation.constraints.Size;
  *
  */
 @Entity
-public class Usuario {
+public class Usuario implements Serializable {
+
 	private static final long serialVersionUID = 1L;
 
 	public static final String LOGADO = "logado";
@@ -46,4 +47,6 @@ public class Usuario {
 	public String toString() {
 		return "Usuario [nome=" + nome + ", senha=" + senha + "]";
 	}
+		
+
 }
