@@ -10,7 +10,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import br.usjt.arqsw.entity.Usuario;
 import br.usjt.arqsw.service.UsuarioService;
-
+/**
+ * 
+ * @author BrunaCamariniVieiraNunes-8162257981
+ *
+ */
 @Controller
 public class LoginController {
 	private UsuarioService usuarioService;

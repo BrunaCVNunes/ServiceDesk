@@ -1,7 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1" pageEncoding="UTF-8" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
-
 <!DOCTYPE html>
 <html>
 
@@ -13,7 +11,6 @@
     <title>Listar Chamados</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-    
 </head>
 
 <body>
@@ -22,14 +19,12 @@
     <!-- Container Principal -->
     <div id="main" class="container">
         <h3 class="page-header">Consultar Chamados</h3>
-        <form action="listar_chamados_exibir" method="get">
+        <form action="listar_chamados_exibir" method="post">
             <div class="row">
                 <div class="form-group col-md-4">
                     <label for="fila">Escolha a Fila:</label>
-                    <form:errors path="fila.id" cssStyle="color:red"/><br>
                     <select class="form-control" name="id">
-                        <option value="0"></option>
-                        <c:forEach var="fila" items="${filas }">
+                        <c:forEach var="fila" items="${filas}">
                             <option value="${fila.id}">${fila.nome}</option>
                         </c:forEach>
                     </select>
@@ -37,7 +32,7 @@
             </div>
             <div id="actions" class="row">
                 <div class="col-md-12">
-                    <button type="submit" class="btn btn-primary" >Listar Chamados</button>
+                    <button type="submit" class="btn btn-primary" name="acao" value="ListarChamadosExibir">Listar Chamados</button>
                     <a href="index" class="btn btn-default">Cancelar</a>
                 </div>
             </div>

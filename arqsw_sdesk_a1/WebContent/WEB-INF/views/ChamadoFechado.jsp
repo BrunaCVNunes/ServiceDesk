@@ -9,7 +9,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-    <title>Novo Chamado</title>
+    <title>Chamado Fechado</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
 </head>
@@ -19,8 +19,8 @@
     <c:import url="Menu.jsp" />
     <!-- Container Principal -->
     <div id="main" class="container">
-        <h3 class="page-header">Novo Chamado</h3>
-        <div class="alert alert-success" role="alert">Chamado salvo com sucesso com o número ${chamado.numero}</div>
+        <h3 class="page-header">Fechar Chamado</h3>
+        <div class="alert alert-success" role="alert">Chamado(s) fechado(s)</div>
     </div>
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
